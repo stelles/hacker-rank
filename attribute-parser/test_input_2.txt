@@ -17,4 +17,5 @@ a.b.c~height
 a.c~height
 a.d.e~strength
 a.c.d.e~strength
-d~sze{-truncated-}
+d~sze
+a.c.d~size

@@ -29,7 +29,12 @@ string tagname(const string s) {
     int start = closing_tag(s) ? 2 : 1;  // If closing tag, we want substring of 2
     char end_char = closing_tag(s) ? '>' : ' '; // set end char as well
     int end = s.find_first_of(end_char);
+    if (end < 0) {
+        end = s.size() - 1;
+    }
+
     end = end - start;
+    
     // end = closing_tag(s) ? end : end - 1;
     // end = end - 1;
     string tempname = s.substr(start, end);
@@ -38,15 +43,16 @@ string tagname(const string s) {
 
 map<string,string> tagattr(string s) {
     map<string, string> attrs;
-    regex attr_regex("([A-z0-9\-]+) \= \"([A-z0-9\-]+)\"");
+    regex attr_regex("([^\\s]+) \= \"([^\\s]+)\"");
     smatch matches;
-    if (regex_search(s, matches, attr_regex)) {
-        int size = matches.size();
-        for (size_t i = 0; i < matches.size(); i++) {
-            string key = matches.str(1);
-            string val = matches.str(2);
-            attrs[key] = val;
-        }
+
+    while (regex_search(s, matches, attr_regex)) {
+        // When matched, get the match group 1 and 2
+        string key = matches.str(1);
+        string val = matches.str(2);
+        attrs[key] = val;
+        // Modify string to exclude first match
+        s = matches.suffix().str();
     }
     return attrs;
 }
@@ -105,8 +111,8 @@ tag parse(const string &in){
 string print_attribute(const string attr, const tag root) {
     const string not_found = "Not Found!";
     stringstream segmentstream(attr);
-    string tagname = "";
-    string attribute_name = "";
+    string tagname;
+    string attribute_name;
 
     bool in_attr = false;
 
@@ -140,7 +146,7 @@ string print_attribute(const string attr, const tag root) {
         }
     }
     
-    if (attribute_name != "") { 
+    if (!attribute_name.empty()) { 
         try {
             string val = rootp->attributes.at(attribute_name);
             return val;
@@ -151,35 +157,45 @@ string print_attribute(const string attr, const tag root) {
     return rootp->name;
 }
 
-int main() {
+int run_parser() {
+    
+    string inputbuffer;
+    vector<string> inputvector;
+    // For testing
+    // ifstream test_file("test_input_4.txt");
+    // while (getline(test_file, inputbuffer)) {
+    //     inputvector.push_back(inputbuffer);
+    // }
 
-    // Loading file ends here
-    string line;
-    getline(cin, line);
+    // Uncomment for prod
+    while (getline(cin, inputbuffer)){
+        inputvector.push_back(inputbuffer);
+    }
 
     vector<int> inputs;
-    istringstream in(line);
+    istringstream in(inputvector[0]);
     copy( istream_iterator<int>( in ), istream_iterator<int>(), back_inserter( inputs ) );
 
     int incout = inputs[0];
     int attrCount = inputs[1];
 
     string instring;
-    for (int i = 0; i < incout; i++) {
-        string buff;
-        getline(cin, buff);
-        instring.append(buff);
-    }
-
+    for (int i = 1; i <= incout; i++) {
+        instring.append(inputvector[i]);
+    } 
     tag root = parse(instring);
 
     string attrsInfo;
     string result;
-    for (int i = 0; i < attrCount; i++){
-        getline(cin, attrsInfo);
+    for (int i = incout + 1; i < inputvector.size(); i++){
+
+        attrsInfo = inputvector[i];
         result = print_attribute(attrsInfo, root);
         cout << result << endl;
     }
-
     return 0;
+}
+
+int main() {
+    return run_parser();
 }

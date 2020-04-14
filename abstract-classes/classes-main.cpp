@@ -4,6 +4,7 @@
 #include <string>
 #include <algorithm>
 #include <set>
+#include <fstream>
 #include <cassert>
 using namespace std;
 
@@ -17,7 +18,7 @@ struct Node{
 };
 
 class Cache{
-   
+
    protected: 
     map<int,Node*> mp; //map the key to the node in the linked list
     int cp;  //capacity
@@ -29,14 +30,89 @@ class Cache{
 };
 
 class LRUCache: public Cache {
-    private:
 
-    void set(int i, int v) {
-        
-    }
+   void reorder(Node* n) {
+      // Base cases
+      if (n == this->head) {
+         return;
+      } else if (n == this->tail) {
+         n->prev->next = NULL;
+         tail = n->prev;
+      } else {
+         n->prev->next = n->next;
+         n->next->prev = n->prev;
+      }
+
+      // Set head node prev/nexts
+      this->head->prev = n;
+      n->prev = NULL;
+      n->next = this->head;
+
+      // New node is head
+      this->head = n;
+
+   }
+   void insert(Node * n) {
+      if (this->mp.size() == 0) { // Empty start - need to set heads
+         this->head = n;
+         this->tail = n;
+         this->tail->next = NULL;
+      } else if (this->mp.size() == this->cp) {
+         // Delete last node and remove from map
+         Node * t = this->tail->prev;
+         t->next = NULL;
+         this->mp.erase(tail->key);
+         this->tail = t;
+      } else {
+         this->head->prev = n;
+      }
+
+      
+      // If n is not the tail
+      if (n != this->tail){
+         n->next = this->head;
+      }
+       // Add to front of linked list and map
+      this->head = n;
+      this->mp[n->key] = n;
+   }
+   public:
+      LRUCache(int capacity){
+         this->cp = capacity;
+      };
+      void printlist() {
+         Node * curr = this->head;
+         while (curr != this->tail) {
+            cout << "Key: " << curr->key << " Val: " << curr->value << endl;
+            curr = curr->next;
+         }
+      }
+      void set(int k, int v) {
+         Node * n;
+         try {
+            n = mp.at(k);
+            n->value = v;
+            reorder(n);
+         } catch (out_of_range) {
+            n = new Node(k,v);
+            insert(n);
+         }
+      }
+      int get(int k) {
+         try {
+            return mp.at(k)->value;
+         } catch (out_of_range) {
+            return -1;
+         }
+      } 
 };
 
+
 int main() {
+   ifstream testfile;
+   testfile.open("output01.txt");
+
+
    int n, capacity,i;
    cin >> n >> capacity;
    LRUCache l(capacity);
@@ -45,9 +121,18 @@ int main() {
       cin >> command;
       if(command == "get") {
          int key;
+         int val;
+         int expected_val;
          cin >> key;
-         cout << l.get(key) << endl;
-      } 
+         val = l.get(key);
+         testfile >> expected_val;
+         if (val != expected_val) {
+            cout << val << endl;
+            cout << expected_val << endl;
+            exit(1);
+         }
+         cout << val << endl;
+      }
       else if(command == "set") {
          int key, value;
          cin >> key >> value;
